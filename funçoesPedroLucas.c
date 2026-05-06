@@ -169,21 +169,20 @@ void mostrar_caminho(No *corrente) {
 }
 
 void comando_ls(No *corrente) {
-    // Para ver o conteúdo, precisamos "entrar" na pasta acessando o ponteiro esq (filho)
+    // Acesso do ponteiro esquerdo para entrar na pasta
     No *aux = corrente->esq; 
 
-    // Enquanto houver itens neste nível...
+    // loop para ver se ainda tem algo no nivel
     while (aux != NULL) {
         
-        // Verifica se é uma pasta para adicionar o traço "-" no final do nome
+        // verifica se é uma pasta para por o - 
         if (aux->eh_pasta == 1) {
             printf("%s-\n", aux->nome);
         } else {
-            // Se for arquivo, imprime apenas o nome
+            // Imprime so o nome se for um arquivo
             printf("%s\n", aux->nome);
         }
         
-        // Caminha para o próximo arquivo/pasta ao lado (irmão)
         aux = aux->dir; 
     }
    
