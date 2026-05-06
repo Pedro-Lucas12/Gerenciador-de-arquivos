@@ -130,7 +130,7 @@ int main() {
             printf("comando invalido\n");
         }
         
-        // Precisa ter essa quebra de linha.
+        // Precisa ter essa quebra de linha
         printf("\n"); 
 
     } while(strcmp(cmd, "ex") != 0);
@@ -141,34 +141,30 @@ int main() {
 
 
 void mostrar_caminho(No *corrente) {
-    // Se a pasta corrente for a raiz (a única que não tem pai), 
-    // a regra é mostrar apenas "->"
+    // Se a pasta corrente for a raiz presisa mostras só ->
     if (corrente->pai == NULL) {
         printf("->");
         return;
     }
 
-    // Vetor de strings temporário para guardar os nomes das pastas.
-    // Usei 1000 posições de segurança, já que não há limite de profundidade
-    char *caminho[1000]; 
+    // Vetor temporário pra guardar o nome das pastas
+    char *caminho[1000]; // 1000 por segurança
     int profundidade = 0;
     No *aux = corrente;
 
-    // Laço que sobe a árvore de pai em pai. 
-    // Ele para quando o pai for NULL (ou seja, quando o aux for a "raiz")
+    // Laço para subir a arvore. Para qnd chega no NULL
     while (aux->pai != NULL) {
         caminho[profundidade] = aux->nome;
         profundidade++;
         aux = aux->pai;
     }
 
-    // Agora imprimimos o vetor de trás pra frente (do mais raso até o mais profundo)
-    // Colocando o '-' antes de cada nome conforme o exemplo do pdf
+    // Imprime o vetor ao contrario.
     for (int i = profundidade - 1; i >= 0; i--) {
         printf("-%s", caminho[i]);
     }
     
-    // E no final, a setinha indicando o local para digitar o comando
+    // seta para indicar onde escrever o comando
     printf("->");
 }
 
