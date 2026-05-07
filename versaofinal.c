@@ -11,7 +11,7 @@ typedef struct no {
     struct no *dir;   // Aponta para o item ao lado 
 } No;
 
-//Função para criar tanto pasta(1) quanto arquivo(0) - Mateus
+// Função para criar no, tanto pasta(1) quanto arquivo(0) - Mateus
 No* criar_no(char *nome_item, int tipo_pasta, No *pasta_atual){
     No *novo = (No*)malloc(sizeof(No));
 
@@ -27,7 +27,7 @@ No* criar_no(char *nome_item, int tipo_pasta, No *pasta_atual){
     return novo;
 }
 
-//Funcao para armazenar arquivos e pastas em ordem lexixografica - Mateus
+// Funcao para armazenar arquivos e pastas em ordem lexixografica - Mateus
 void insercao_ordenada(No *corrente, No *novo){
     if(corrente->esq == NULL){
         corrente->esq = novo;
@@ -44,7 +44,6 @@ void insercao_ordenada(No *corrente, No *novo){
     No *atual_busca = anterior->dir;
 
     while(atual_busca != NULL && strcmp(novo->nome, atual_busca->nome) > 0){
-
         anterior = atual_busca;
         atual_busca = atual_busca->dir;
     }
@@ -66,8 +65,11 @@ void copiarStr(char dest[], char orig[], int ini, int fim){
 // 3. Funçoes para implementar
 void mostrar_caminho(No *corrente); 
 void comando_ls(No *corrente);
+void comando_ma(No *corrente, char *nome_arquivo);
+void comando_mp(No *corrente, char *nome_pasta);
 No* comando_cd(No *corrente, char *destino); 
-void comando_rm(No *corrente, char *alvo); 
+void comando_rm(No *corrente, char *alvo);
+void liberar_arvore(No* no); // Protótipo da função auxiliar do RM
 
 int main() {
     // Inicializando a "pasta raiz" do sistema
@@ -78,31 +80,22 @@ int main() {
     raiz->esq = NULL;
     raiz->dir = NULL;
 
-   
     No *corrente = raiz; 
     
     // variaveis da string completa, do comando e do nome do arquivo/pasta.
     char str[100], cmd[3], par[100];
 
-    
     do {
-        // Exibe o caminho (ex: -> ou -temp-teste2->) antes de ler
         mostrar_caminho(corrente); 
         
-        fflush(stdin);
-        gets(str); 
+        if (fgets(str, sizeof(str), stdin) == NULL) break; 
         
-        // Limpando as strings antes de copiar para evitar lixo de memória
         cmd[0] = '\0';
         par[0] = '\0';
 
-        
         copiarStr(cmd, str, 0, 2);
-        
-        
         copiarStr(par, str, 3, 100); 
 
-        
         if (strcmp(cmd, "ex") == 0) {
             printf("sistema encerrado\n");
             break; 
@@ -111,26 +104,21 @@ int main() {
             comando_ls(corrente);
         }
         else if (strcmp(cmd, "ma") == 0) {
-            
             comando_ma(corrente, par);
         }
         else if (strcmp(cmd, "mp") == 0) {
-            
             comando_mp(corrente, par);
         }
         else if (strcmp(cmd, "cd") == 0) {
-            
             corrente = comando_cd(corrente, par); 
         }
         else if (strcmp(cmd, "rm") == 0) {
-            
             comando_rm(corrente, par);
         }
         else {
-            printf("comando invalido\n");
+            printf("comando invalido");
         }
         
-        // Precisa ter essa quebra de linha
         printf("\n"); 
 
     } while(strcmp(cmd, "ex") != 0);
@@ -139,9 +127,10 @@ int main() {
 }
 
 
+// --- IMPLEMENTAÇÕES DOS COMANDOS ---
 
 void mostrar_caminho(No *corrente) {
-    // Se a pasta corrente for a raiz presisa mostras só ->
+    // Se a pasta corrente for a raiz precisa mostrar só ->
     if (corrente->pai == NULL) {
         printf("->");
         return;
@@ -171,21 +160,26 @@ void mostrar_caminho(No *corrente) {
 void comando_ls(No *corrente) {
     // Acesso do ponteiro esquerdo para entrar na pasta
     No *aux = corrente->esq; 
+    int primeiro = 1; // Flag para controlar as quebras de linha internas
 
     // loop para ver se ainda tem algo no nivel
     while (aux != NULL) {
         
-        // verifica se é uma pasta para por o - 
-        if (aux->eh_pasta == 1) {
-            printf("%s-\n", aux->nome);
-        } else {
-            // Imprime so o nome se for um arquivo
-            printf("%s\n", aux->nome);
+        // Pula uma linha apenas se não for o primeiro item impresso
+        if (!primeiro) {
+            printf("\n");
         }
         
+        if (aux->eh_pasta == 1) {
+            printf("%s-", aux->nome);
+        } else {
+            // Imprime so o nome se for um arquivo
+            printf("%s", aux->nome);
+        }
+        
+        primeiro = 0;
         aux = aux->dir; 
     }
-   
 }
 
 void comando_ma(No *corrente, char *nome_arquivo) {
@@ -199,10 +193,72 @@ void comando_mp(No *corrente, char *nome_pasta) {
 }
 
 No* comando_cd(No *corrente, char *destino) {
-   
-    return corrente; // Retorno temporário para não dar erro
+    // Caso 1: Acessar a pasta do nível hierárquico superior (cd ..)
+    if (strcmp(destino, "..") == 0) {
+        if (corrente->pai != NULL) {
+            return corrente->pai;
+        } else {
+            // Se tentar dar cd .. na raiz, é comando inválido
+            printf("comando invalido");
+            return corrente;
+        }
+    }
+
+    // Caso 2: Entrar em uma subpasta (cd <pasta>)
+    No* temp = corrente->esq;
+    
+    while (temp != NULL) {
+        // Verifica se o nome bate
+        if (strcmp(temp->nome, destino) == 0) {
+            // Se for pasta entra, se for arquivo é erro
+            if (temp->eh_pasta == 1) {
+                return temp;
+            } else {
+                printf("comando invalido");
+                return corrente;
+            }
+        }
+        temp = temp->dir;
+    }
+    
+    // Se não encontrou 
+    printf("comando invalido"); 
+    return corrente;
+}
+
+void liberar_arvore(No* no) {
+    if (no == NULL) return;
+    liberar_arvore(no->esq); 
+    liberar_arvore(no->dir); 
+    free(no);
 }
 
 void comando_rm(No *corrente, char *alvo) {
+    No* atual = corrente->esq;
+    No* anterior = NULL;
+
+    while (atual != NULL) {
+        if (strcmp(atual->nome, alvo) == 0) {
+            // Remove o nó da lista encadeada de irmãos
+            if (anterior == NULL) {
+                // O nó a ser removido é o primeiro filho
+                corrente->esq = atual->dir;
+            } else {
+                // O nó está no meio ou fim da lista de irmãos
+                anterior->dir = atual->dir;
+            }
+            
+            atual->dir = NULL; // separa o nó do resto da árvore
+            
+            // Apaga o conteúdo interno e depois o próprio nó
+            liberar_arvore(atual->esq); 
+            free(atual);
+            return;
+        }
+        anterior = atual;
+        atual = atual->dir;
+    }
     
+    // Se não encontrou o arquivo/pasta com esse nome
+    printf("comando invalido"); 
 }
